@@ -2,59 +2,84 @@
 
 public class Program
 {
-	private static bool loadingComplete = false;
+    private static bool loadingComplete = false;
 
-	public static void Main()
-	{
-		Console.Write("Enter search keyword: ");
-		string searchString = Console.ReadLine() ?? "";
+    public static void Main()
+    {
 
-		string projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\data"));
+        string projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\data"));
 
-		var loaderThread = new Thread(() =>
-		{
-			string[] symbols = { "|", "/", "-", "\\" };
-			int i = 0;
-			while (!loadingComplete)
-			{
-				Console.Write($"\rLoading {symbols[i++ % symbols.Length]}");
-				Thread.Sleep(150);
-			}
-		});
+        while (true)
+        {
+            if (loadingComplete)
+            {
+                Console.WriteLine("Search COMPLETED!");
+            }
 
-		loadingComplete = false;
-		loaderThread.Start();
+            Console.Write("Enter search keyword: ");
+            string keyword = Console.ReadLine() ?? "";
 
-		var matchingLines = ReadTextFiles(projectDir, searchString);
+            if (keyword.Equals("exit", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Program terminated");
+                break;
+            }
 
-		loadingComplete = true;
-		loaderThread.Join();
+            var loaderThread = new Thread(() =>
+            {
+                string[] symbols = { "|", "/", "-", "\\" };
+                int i = 0;
+                while (!loadingComplete)
+                {
+                    Console.Write($"\rLoading {symbols[i++ % symbols.Length]}");
+                    Thread.Sleep(150);
+                }
+            });
 
-		Console.WriteLine($"\rResults for \"{searchString}\":\n");
+            loadingComplete = false;
+            loaderThread.Start();
 
-		foreach (var line in matchingLines)
-		{
-			Console.WriteLine(line);
-		}
+            var matchingLines = ReadTextFiles(projectDir, keyword);
 
-		Console.ReadKey();
-	}
+            loadingComplete = true;
+            loaderThread.Join();
 
-	private static List<string> ReadTextFiles(string directoryPath, string searchString)
-	{
-		var textFiles = Directory.EnumerateFiles(directoryPath, "*.txt");
+            Console.WriteLine("Search COMPLETED!");
+            Console.WriteLine($"\rResults for \"{keyword}\":\n");
 
-		var allFilesRows = new List<string>();
+            if (matchingLines.Count == 0)
+            {
+                Console.WriteLine($"No lines found containing: \"{keyword}\".\n");
+            }
+            else
+            {
+                foreach (var line in matchingLines)
+                {
+                    Console.WriteLine(line);
+                }
 
-		foreach (var filePath in textFiles)
-		{
-			var rows = File.ReadAllLines(filePath);
-			allFilesRows.AddRange(rows);
-		}
+                Console.WriteLine();
+            }
 
-		var filteredLines = allFilesRows.Where(line => line.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
 
-		return filteredLines;
-	}
+    }
+
+    private static List<string> ReadTextFiles(string directoryPath, string searchString)
+    {
+        var textFiles = Directory.EnumerateFiles(directoryPath, "*.txt");
+
+        var allFilesRows = new List<string>();
+
+        foreach (var filePath in textFiles)
+        {
+            var rows = File.ReadAllLines(filePath);
+            allFilesRows.AddRange(rows);
+        }
+
+        var filteredLines = allFilesRows.Where(line => line.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        return filteredLines;
+    }
 
 }
